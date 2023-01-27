@@ -1,0 +1,193 @@
+#https://fr.wikipedia.org/wiki/Jeu_de_la_vie
+#"Jhon Conway's game of life" est l'automate cellulaire le plus connu. Les règles de l'automate cellulaire de conway peuvent
+#être codifiées, de sorte qu'il existe de multiples variations de règles du style du jeu de la vie. Chaque automate cellulaire
+#de ce style possède une sorte de "code génétique" mathémathique.
+#De plus, l'inspiration de l'automate provient partiellement des êtres vivants. De sorte que, il serait possible de créer un
+#simulateur de sélection naturelle
+
+
+import random
+
+random.seed(10)
+
+#Car on ne veut pas et on ne peut pas simuler un environement infini, les frontières de notre environnement agissent comme un ruban
+def RangeLoop(Position, Limit):
+    if Position == -1:
+        return (Limit - 1)
+    elif Position == Limit:
+        return 0
+    else:
+        return Position
+
+#La classe qui définit les cellules de notre simulation
+class Cell:
+    def __init__(self, IsAlive, B1, B2, B3, B4, B5, B6, B7, B8, D0, D1, D2, D3, D4, D5, D6, D7, D8):
+	#IsAlive: Détermine si la cellule est vivante ou non. L'on travaille uniquement avec les automates cellulaires à 1 état.
+        self.IsAlive = IsAlive
+		#Genes: "Code Génétique" d'une cellule. les B déterminent le nombre de cellules vivantes nécécaires autour d'une cellule
+		#morte pour que la cellule vivante puisse y contribuer son code génétique.
+		#Les D déterminent le nombre de cellules autour d'une cellule vivante nécécaire pour qu'elle meure
+        self.Genes = [B1, B2, B3, B4, B5, B6, B7, B8, D0, D1, D2, D3, D4, D5, D6, D7, D8]
+
+#La classe qui contient notre simulation
+class Terrain:
+#Initialisation
+    def __init__(self, X, Y, cells):
+        self.X = X
+        self.Y = Y
+        for x in range(X):
+            cells.append([])
+            for y in range(Y):
+                cells[x].append(Cell(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
+        self.cells = cells
+#Définition d'un état de base qui crée un "vaisseau spatial" (formation de cellules qui se répètent et se déplacent) das la
+#Règle originale de Conway
+    def Glider(self):
+        #                       alive, B1,    B2,    B3,   B4,    B5,    B6,    B7,    B8,    D0,   D1,   D2,    D3,    D4,   D5,   D6,   D7,   D8
+        self.cells[0][1] = Cell(True, False, False, True, False, False, False, False, False, True, True, False, False, True, True, True, True, True)
+        self.cells[1][2] = Cell(True, False, False, True, False, False, False, False, False, True, True, False, False, True, True, True, True, True)
+        self.cells[2][0] = Cell(True, False, False, True, False, False, False, False, False, True, True, False, False, True, True, True, True, True)
+        self.cells[2][1] = Cell(True, False, False, True, False, False, False, False, False, True, True, False, False, True, True, True, True, True)
+        self.cells[2][2] = Cell(True, False, False, True, False, False, False, False, False, True, True, False, False, True, True, True, True, True)
+        print(self.cells[0][1].IsAlive)
+#Itère la simulation d'une étape.
+    def Iteration(self):
+        Hold = Terrain(self.X, self.Y, [])
+        AdjNum = 0
+        AdjCode = []
+        ParentNum = 0
+        ParentCode = []
+        Child = Cell(True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False)
+        for x in range(self.X):#Pour toutes les cellules
+            for y in range(self.Y):
+                AdjNum = 0
+                if self.cells[x][y].IsAlive == True:#Si la cellule présente est vivante
+                    xLoop = RangeLoop(x+1, self.X)#Cherche le nombre de cellules adjèscentes vivantes
+                    yLoop = RangeLoop(y+1, self.Y)
+                    if self.cells[xLoop][yLoop].IsAlive == True:
+                        AdjNum = AdjNum + 1
+						
+                    xLoop = RangeLoop(x+1, self.X)
+                    if self.cells[xLoop][y].IsAlive == True:
+                        AdjNum = AdjNum + 1
+						
+                    xLoop = RangeLoop(x+1, self.X)
+                    yLoop = RangeLoop(y-1, self.Y)
+                    if self.cells[xLoop][yLoop].IsAlive == True:
+                        AdjNum = AdjNum + 1
+						
+                    yLoop = RangeLoop(y+1, self.Y)
+                    if self.cells[x][yLoop].IsAlive == True:
+                        AdjNum = AdjNum + 1
+						
+                    yLoop = RangeLoop(y-1, self.Y)
+                    if self.cells[x][yLoop].IsAlive == True:
+                        AdjNum = AdjNum + 1
+						
+                    xLoop = RangeLoop(x-1, self.X)
+                    yLoop = RangeLoop(y+1, self.Y)
+                    if self.cells[xLoop][yLoop].IsAlive == True:
+                        AdjNum = AdjNum + 1
+						
+                    xLoop = RangeLoop(x-1, self.X)
+                    if self.cells[xLoop][y].IsAlive == True:
+                        AdjNum = AdjNum + 1
+						
+                    xLoop = RangeLoop(x-1, self.X)
+                    yLoop = RangeLoop(y-1, self.Y)
+                    if self.cells[xLoop][yLoop].IsAlive == True:
+                        AdjNum = AdjNum + 1
+					
+                    if self.cells[x][y].Genes[8+AdjNum] == True:#Si la règle de la cellule vivante dit qu'elle devrai être morte, elle le deviens
+                        Hold.cells[x][y] = Cell(False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False)
+                    else:
+                        Hold.cells[x][y] = self.cells[x][y]
+                    
+                else:#Si la cellule est morte
+                    AdjCode = []
+                    AdjNum = 0
+                    xLoop = RangeLoop(x+1, self.X)
+                    yLoop = RangeLoop(y+1, self.Y)
+                    if self.cells[xLoop][yLoop].IsAlive == True:#Vérifie le nombre de cellules autour et garde leur codes génétiques
+                        AdjCode.append(self.cells[xLoop][yLoop].Genes)
+                        AdjNum = AdjNum + 1
+						
+                    xLoop = RangeLoop(x+1, self.X)
+                    if self.cells[xLoop][y].IsAlive == True:
+                        AdjCode.append(self.cells[xLoop][y].Genes)
+                        AdjNum = AdjNum + 1
+						
+                    xLoop = RangeLoop(x+1, self.X)
+                    yLoop = RangeLoop(y-1, self.Y)
+                    if self.cells[xLoop][yLoop].IsAlive == True:
+                        AdjCode.append(self.cells[xLoop][yLoop].Genes)
+                        AdjNum = AdjNum + 1
+						
+                    yLoop = RangeLoop(y+1, self.Y)
+                    if self.cells[x][yLoop].IsAlive == True:
+                        AdjCode.append(self.cells[x][yLoop].Genes)
+                        AdjNum = AdjNum + 1
+						
+                    yLoop = RangeLoop(y-1, self.Y)
+                    if self.cells[x][yLoop].IsAlive == True:
+                        AdjCode.append(self.cells[x][yLoop].Genes)
+                        AdjNum = AdjNum + 1
+						
+                    xLoop = RangeLoop(x-1, self.X)
+                    yLoop = RangeLoop(y+1, self.Y)
+                    if self.cells[xLoop][yLoop].IsAlive == True:
+                        AdjCode.append(self.cells[xLoop][yLoop].Genes)
+                        AdjNum = AdjNum + 1
+						
+                    xLoop = RangeLoop(x-1, self.X)
+                    if self.cells[xLoop][y].IsAlive == True:
+                        AdjCode.append(self.cells[xLoop][y].Genes)
+                        AdjNum = AdjNum + 1
+						
+                    xLoop = RangeLoop(x-1, self.X)
+                    yLoop = RangeLoop(y-1, self.Y)
+                    if self.cells[xLoop][yLoop].IsAlive == True:
+                        AdjCode.append(self.cells[xLoop][yLoop].Genes)
+                        AdjNum = AdjNum + 1
+                    
+                    if AdjNum > 0:
+                        ParentCode = []
+                        ParentNum = 0
+                        for A in AdjCode:
+                            if A[AdjNum-1] == True:
+                                ParentCode.append(A)
+                                ParentNum = ParentNum + 1
+						
+                        if ParentNum > 0:#Si il existe une ou plusieurs cellules vivantes autour de la cellule morte qui disent que la cellule devrais devenir vivante dans leur code génétique, elle le deviens.
+                            Child = Cell(True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False)
+                            for N in range(16):
+                                Child.Genes[N] = ParentCode[random.randrange(ParentNum - 1)][N]#Code génétique de la nouvelle cellule estun mélange aléatoire de tout les parents qui ont contribuées à sa naissance
+                                if (random.randrange(100) == 50):#Chance de mutation
+                                    Child.Genes[N] = (Child.Genes[N]+1)%1
+                            Hold.cells[x][y] = Child
+        self.cells = Hold.cells
+		
+    def Draw(self):#Dessine l'état présent de la simulation
+        Row = []
+        for x in range(self.X):
+            Row = []
+            for y in range(self.Y):
+                if self.cells[x][y].IsAlive == False:
+                    Row.append(".")
+                else:
+                    Row.append("O")
+            print(Row)
+				
+
+	
+#Code main d'exécution
+Grid = Terrain(10, 10, [])
+
+Grid.Glider()
+Grid.Draw()
+while input() != "stop":
+    print("----") 
+    Grid.Iteration()
+    Grid.Draw()
+
+
